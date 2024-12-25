@@ -1,0 +1,282 @@
+---
+title: "bellabeat_case_study"
+output: html_notebook
+---
+
+# <span style="color:#fc7c64">**Bellabeat Health & Wellness Technology (R)**</span>
+
+## <span style="color:#fcae9e">_Consumer Insights & Market Trends for Wearable Smart Devices_</span> 
+
+#### **Purpose**
+The goal of this project is to dive into Fitbit Fitness Tracker data to uncover trends in health and wellness device usage that can inform Bellabeat’s marketing strategies and product development.
+  
+#### **Background Information** 
+The Bellabeat company is a high-tech manufacturer of digital health and wellness-focused smart devices for women. While experiencing current success as a small business, Bellabeat is looking to expand its brand to become a household name in the global smart device market. The founders of the company believe that analyzing trends in non-Bellabeat smart device health and fitness data could be the key to growth and new business opportunities for the company.They want to implement the actionable insights gained from this analysis to enhance their marketing strategies and increase the reach of their beautifully designed products to women around the world. 
+
+**Stakeholders/Team Members**:
+
+* Urška Sršen: Bellabeat’s Co-founder and Chief Creative Officer
+* Sando Mur: Mathematician and Bellabeat’s Cofounder
+* Marketing Analysis Team
+* Bellabeat Customers (Past, Current, & Future)
+
+**Current Product Offerings**:
+
+* Bellabeat App: mobile app that provides users with health data related to their activity, sleep, stress, menstrual cycle, and mindfulness habits; connects to their line of smart wellness products
+* Bellabeat Membership Subscription: gives users 24/7 access to fully personalized guidance on nutrition, activity, sleep, health and beauty, and mindfulness based on their lifestyle and goals
+* Leaf: wearable wellness tracker; bracelet, necklace, or clip; tracks activity, stress, sleep
+* Time: wellness watch; tracks activity, stress, sleep
+* Spring: water bottle that uses smart tech to track daily water intake
+
+**Marketing Strategy Overview**: 
+
+* E-Commerce Channel (Website)
+* Traditional Print Media
+* Digital Marketing
+* Google Search & Ads
+* Social Media (Facebook, Twitter, Instagram, YouTube)
+
+
+#### **Business Tasks**
+**Attributes of Focus**: Sleep, Daily Activity, Calories, Steps
+
+**Bellabeat Device**: Leaf (wearable wellness tracker)
+
+1. Collect and analyze data on usage trends of non-Bellabeat health and fitness smart device. We will be using FitBit Fitness Tracker Data for this analysis.
+2. Apply insights from FitBit usage to Bellabeat customers
+3. Actionize insights for:
+    a. High-level marketing strategies
+    b. Opportunities for growth
+    c. Lifestyle insights that can drive business decisions
+    d. New technology and improvements on current technology
+
+### <span style="color:#fc7c64">**Install & Load Packages**
+```{r}
+install.packages("lubridate")
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("tidyr")
+install.packages("tidyverse")
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(tidyverse)
+```
+    
+### <span style="color:#fc7c64">**Import Data**
+```{r}
+steps <- read_csv("~/JOB SEARCH/Portfolio Projects/Bella Beat Case Study/dailySteps_merged.csv")
+
+sleep <- read_csv("~/JOB SEARCH/Portfolio Projects/Bella Beat Case Study/sleepDay_merged.csv")
+
+activity <- read_csv("~/JOB SEARCH/Portfolio Projects/Bella Beat Case Study/dailyActivity_merged.csv")
+
+calories <- read_csv("~/JOB SEARCH/Portfolio Projects/Bella Beat Case Study/dailyCalories_merged.csv")
+```
+
+
+```{r}
+head(sleep)
+view(activity)
+```
+
+The sleep, steps, and weight dataframes have less observations than the others.
+```{r}
+n_distinct(activity$Id)
+n_distinct(calories$Id)
+n_distinct(sleep$Id)
+n_distinct(steps$Id)
+n_distinct(weight$Id)
+```
+
+The number of distinct ID values in each data set show how many individuals tracked or reported that metric. Only eight participants tracked this metric, so it will be hard to apply this data set beyond exploratory analysis or hypothesis generation. Two people tracked their data for more than half of the days of the month, so these could be explored as case studies.
+
+### <span style="color:#fc7c64">**Clean & Prepare Data for Analysis**
+```{r}
+library(lubridate)
+sleep <- sleep %>%
+  mutate(SleepDay = format(as_date(mdy_hms(SleepDay)), "%m/%d/%Y"))
+sleep <- sleep %>%
+  rename(Date = SleepDay)
+
+activity <- activity %>%
+  mutate(ActivityDate = format(as_date(mdy(ActivityDate)), "%m/%d/%Y"))
+activity <- activity %>%
+  rename(Date = ActivityDate)
+
+calories <- calories %>%
+  mutate(ActivityDay = format(as_date(mdy(ActivityDay)), "%m/%d/%Y"))
+calories <- calories %>%
+  rename(Date = ActivityDay)
+
+steps <-steps %>% 
+  rename(Date = ActivityDay)
+```
+
+I'm interested in analyzing the total minutes that the participants are active. I need to add a column for total active minutes to the activity data frame.
+```{r}
+activity <- activity %>%
+        mutate(TotalActiveMinutes= VeryActiveMinutes + FairlyActiveMinutes + LightlyActiveMinutes)
+head(activity)
+```
+
+I notice that the calories dataframe and the Calories column in the activities dataframe may be the same. Since there are only three variables,  I will check the columns against each other to see if they are the same.
+```{r}
+identical(activity$Calories, calories$Calories)
+identical(activity$Date, calories$Date)
+```
+
+The columns are the same and perfectly aligned by date. I'll remove this dataframe to avoid duplicates and making mistakes when calling on data in my code.
+```{r}
+rm(calories)
+```
+
+### <span style="color:#fc7c64">**Summary Statistics**
+```{r}
+activity %>%  
+  select(TotalSteps, LightlyActiveMinutes, FairlyActiveMinutes, VeryActiveMinutes, TotalActiveMinutes, TotalDistance, SedentaryMinutes, Calories) %>%
+  summary()
+
+sleep %>%  
+  select(TotalSleepRecords, TotalMinutesAsleep, TotalTimeInBed) %>%
+  summary()
+
+steps %>%  
+  select(StepTotal) %>%
+  summary()
+```
+
+#### <span style="color:#E4765F">**Summary Statistics - High-Level Observations**
+
+* Participants burn around a median of 2134 calories. According to the [Centers for Disease Prevention (CDC)](https://www.webmd.com/fitness-exercise/how-many-calories-do-i-burn-in-a-day), the average moderately active woman (30 minutes of moderate exercise a day for most days of the week) between the ages of 20-70 burns from 2,000 to 2,300 calories a day. So this figure falls in line with industry standards. However, it is important to note that calories burned will vary by food intake, activity level and time, basal metabolic rate, and other subjective factors.
+
+* On average, the women in this study burned 7,638 - 3,000-4,000 more calories than the average person, according to the [Mayo Clinic](https://www.mayoclinic.org/healthy-lifestyle/fitness/in-depth/10000-steps/art-20317391).
+
+* Most women in this data set only have 1 sleep session each day, meaning they fall asleep once and wake up once. During this session, they are bed for about 7 and a half hours, and actually asleep for 7 hours on average.
+
+* The [CDC](https://www.cdc.gov/pcd/issues/2016/pdf/16_0111.pdf) recommends about 10,000 steps a day to prevent chronic health issues. In this sample, the paticipants take about 7,638 steps per day, about 2,500 steps less than what's recommended.
+
+### <span style="color:#fc7c64">**Analysis**
+
+Based on these initial findings, I would like to analyze the relationship between activity (particularly total steps and total active minutes), calories, and sleep.
+```{r}
+sleep_activity <- merge(sleep, activity, by=c('Id', 'Date'))
+head(sleep_activity)
+```
+
+```{r}
+cor(sleep_activity$TotalMinutesAsleep, sleep_activity$TotalActiveMinutes)
+
+ggplot(data=sleep_activity, aes(y=TotalActiveMinutes, x=TotalMinutesAsleep)) +
+  geom_point(color="#EE82EE") +
+  geom_smooth(color="#000080")
+```
+
+TotalMinutesAsleep (x) and TotalActiveMinutes (y) have a correlation coefficient of -.064 - this relationship is so weak, it's almost neglible.
+
+```{r}
+ggplot(data=sleep_activity, aes(y=VeryActiveMinutes, x=TotalMinutesAsleep)) +
+  geom_point(color="#EE82EE") +
+  geom_smooth(color="#000080")
+
+ggplot(data=sleep_activity, aes(y=FairlyActiveMinutes, x=TotalMinutesAsleep)) +
+  geom_point(color="#EE82EE") +
+  geom_smooth(color="#000080")
+
+ggplot(data=sleep_activity, aes(y=LightlyActiveMinutes, x=TotalMinutesAsleep)) +
+  geom_point(color="#EE82EE") +
+  geom_smooth(color="#000080")
+
+ggplot(data=sleep_activity, aes(y=SedentaryMinutes, x=TotalMinutesAsleep)) +
+  geom_point(color="#EE82EE") +
+  geom_smooth(color="#000080")
+
+cor(sleep_activity$TotalMinutesAsleep, sleep_activity$VeryActiveMinutes)
+cor(sleep_activity$TotalMinutesAsleep, sleep_activity$FairlyActiveMinutes)
+cor(sleep_activity$TotalMinutesAsleep, sleep_activity$LightlyActiveMinutes)
+cor(sleep_activity$TotalMinutesAsleep, sleep_activity$SedentaryMinutes)
+```
+
+The strongest relationship between all of these values is between SedentaryMinutes and TotalMinutesAsleep - with an r = -.60, this indicates a moderately strong negative relationship, meaning that as sedentary time decreases, the total time spent asleep increases.
+```{r}
+ggplot(data=sleep_activity, aes(y=SedentaryMinutes, x=TotalTimeInBed)) +
+  geom_point(color="#EE82EE") +
+  geom_smooth(color="#000080")
+
+cor(sleep_activity$TotalTimeInBed, sleep_activity$SedentaryMinutes)
+```
+The correlation between the total time spent in bed (whether asleep or awake) and sedentary minutes is slightly stronger than the that of time asleep and sedentary minutes, at r= -.62.
+
+```{r}
+ggplot(data=sleep_activity, aes(y=SedentaryMinutes, x=Calories)) +
+  geom_point(color="#EE82EE") +
+  geom_smooth(color="#000080")
+```
+
+This relationship is negligible, which is a bit surprising. variables. This sampling spent the most time doing light activities, so I will look at the relationship between minutes of a particular activity level and calories.
+```{r}
+ggplot(data=sleep_activity, aes(y=FairlyActiveMinutes, x=Calories)) +
+  geom_point(color="#EE82EE") +
+  geom_smooth(color="#000080")
+
+cor(sleep_activity$FairlyActiveMinutes, sleep_activity$Calories)
+
+ggplot(data=sleep_activity, aes(y=LightlyActiveMinutes, x=Calories)) +
+  geom_point(color="#EE82EE") +
+  geom_smooth(color="#000080")
+
+cor(sleep_activity$LightlyActiveMinutes, sleep_activity$Calories)
+
+ggplot(data=sleep_activity, aes(y=VeryActiveMinutes, x=Calories)) +
+  geom_point(color="#EE82EE") +
+  geom_smooth(color="#000080")
+
+cor(sleep_activity$VeryActiveMinutes, sleep_activity$Calories)
+```
+
+As expected, more calories are burned at more intense levels of activity. However, the relationship is only moderately strong, meaning there are other variables and factors that how many calories are burned. I'd like to take a look at a more neutral mode of exercise. 
+
+
+```{r}
+ggplot(data=sleep_activity, aes(y=Calories, x=TotalSteps)) +
+  geom_point(color="#EE82EE") +
+  geom_smooth(color="#000080")
+
+cor(sleep_activity$TotalSteps, sleep_activity$Calories)
+```
+
+```{r}
+ggplot(data = sleep_activity, aes(x = Calories, y = TotalMinutesAsleep)) +
+  geom_point(alpha = 0.6, color = "#000080") +
+  geom_smooth(method = "lm", se = TRUE, color = "#EE82EE") +
+  facet_wrap(~ SleepCategory) 
+```
+
+### <span style="color:#fc7c64">**Findings and Recommendations for Bellabeat Product Line**
+
+**Promote Movement and Steps Over Distance or Intensity**:
+
+* The company should focus on encouraging users to take more steps and incorporate movement into their daily routines, regardless of the intensity or the distance covered. 
+* Intense exercise burns more calories, but people are typically less likely to sustain long durations at this high intensity. It’s important to promote consistent movement throughout the day rather than relying solely on active workouts.
+* Steps are a practical and accessible goal for users of all fitness levels. Incorporating movement into everyday activities can lead to significant long-term health benefits, even if these activities aren’t classified as "intense."
+
+**Encourage People to Avoid Sedentary Lifestyles**:
+
+* Overall, being sedentary is harmful to one's health, regardless of how many active minutes someone achieves. Even if active minutes don’t seem to significantly impact calorie burn or other metrics, being sedentary can negatively affect metabolism, cardiovascular health, and mental well-being.
+* The company should encourage users to set daily step goals and incorporate small bouts of activity throughout the day. Marketing and in-app messaging should emphasize that _any movement counts_, from walking to household tasks, as it can accumulate into a significant health benefit and is better than staying sedentary. 
+* A potential product update could include notifications that remind people to take breaks every hour to stretch or walk can lead to long-term health benefits.
+
+**Highlight the Importance of Sleep and Recovery**:
+
+* The company should incorporate messaging that prioritizes sleep while still encouraging users to remain active during the day. 
+* Balance is key, so users should aim for adequate sleep while also avoiding long sedentary periods during the day.
+
+
+**Integrate Calories and Steps into Wellness Strategies**:
+
+* The company should focus the importance of calories burned through all types of movement, including daily steps. Small actions such as walking to work, climbing stairs, or walking the dog can add up to a significant calorie burn over time.
+* Step goals should be framed not only as a measure of physical activity but also as a pathway to better calorie balance. Integrating step counting with calorie tracking in the app could provide users with tangible, immediately measurable progress and reinforce the connection between movement and overall health.
+* Rewarding consistency can motivate users to stay active even if their exercise intensity, active minutes, or other fitness metrics fluctuate.
+
+The company can create a well-rounded approach to health that supports both short-term activity and long-term lifestyle changes by incorporating this messaging into their product features and marketing content.
