@@ -1,1 +1,1 @@
-# bellabeat
+# Bella Beat Case Study
